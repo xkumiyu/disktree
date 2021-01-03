@@ -6,6 +6,15 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sort"
+)
+
+const version = "0.1.0"
+
+var (
+	maxDepth int
+	minSize  int
+	sortKey  string
 )
 
 type obj struct {
@@ -18,8 +27,18 @@ type obj struct {
 
 func main() {
 	var root string
+	var v = flag.Bool("version", false, "Show the version and exit.")
+	flag.IntVar(&maxDepth, "max-depth", -1, "Show only to max-depth. -1 means infinity.")
+	flag.StringVar(&sortKey, "sort", "name", "Select sort: name, size")
+	// flag.IntVar(&minSize, "min-size", -1, "Show files/dirs larger than min-size.")
 
 	flag.Parse()
+
+	if *v {
+		fmt.Printf("dtree version %s\n", version)
+		os.Exit(0)
+	}
+
 	switch len(flag.Args()) {
 	case 0:
 		root = "."
@@ -29,6 +48,19 @@ func main() {
 		os.Exit(1)
 	}
 
+	if sortKey != "name" && sortKey != "size" {
+		os.Exit(1)
+	}
+
+	info, err := os.Stat(root)
+	if err != nil || info.IsDir() == false {
+		os.Exit(1)
+	}
+
+	run(root)
+}
+
+func run(root string) {
 	o := obj{
 		name:     root,
 		size:     0,
@@ -45,8 +77,12 @@ func main() {
 }
 
 func print(files []obj, prefix string, depth int) {
+	if maxDepth != -1 && depth > maxDepth {
+		return
+	}
+
 	for i, file := range files {
-		size := addColor(readableSize(file.size), "green")
+		size := addColor(readableSize(float64(file.size)), "green")
 		name := file.name
 		if file.isdir {
 			name = addColor(name, "blue") + "/"
@@ -80,22 +116,6 @@ func print(files []obj, prefix string, depth int) {
 	}
 }
 
-func addColor(str string, color string) string {
-	switch color {
-	case "red":
-		str = "\x1b[31m" + str + "\x1b[0m"
-	case "green":
-		str = "\x1b[32m" + str + "\x1b[0m"
-	case "yellow":
-		str = "\x1b[33m" + str + "\x1b[0m"
-	case "blue":
-		str = "\x1b[34m" + str + "\x1b[0m"
-	default:
-		os.Exit(1)
-	}
-	return str
-}
-
 func walk(path string) []obj {
 	var arr []obj
 
@@ -119,21 +139,39 @@ func walk(path string) []obj {
 		arr = append(arr, o)
 	}
 
-	// sort.SliceStable(arr, func(i, j int) bool { return arr[i].size > arr[j].size })
+	if sortKey == "size" {
+		sort.SliceStable(arr, func(i, j int) bool { return arr[i].size > arr[j].size })
+	}
 
 	return arr
 }
 
-func readableSize(size int64) string {
-	if size > 1000*1000*1000*1000 {
-		return fmt.Sprintf("%3dT", size/(1024*1024*1024*1024))
-	} else if size > 1000*1000*1000 {
-		return fmt.Sprintf("%3dG", size/(1024*1024*1024))
-	} else if size > 1000*1000 {
-		return fmt.Sprintf("%3dM", size/(1024*1024))
-	} else if size > 1000 {
-		return fmt.Sprintf("%3dK", size/1024)
-	} else {
-		return fmt.Sprintf("%3dB", size)
+func readableSize(size float64) string {
+	i := 0
+	for size > 1000 && i < 5 {
+		size /= 1024
+		i += 1
 	}
+	var unit = [5]string{"B", "K", "M", "G", "T"}
+	if size < 10 {
+		return fmt.Sprintf("%1.1f%s", size, unit[i])
+	} else {
+		return fmt.Sprintf("%3.0f%s", size, unit[i])
+	}
+}
+
+func addColor(str string, color string) string {
+	switch color {
+	case "red":
+		str = "\x1b[31m" + str + "\x1b[0m"
+	case "green":
+		str = "\x1b[32m" + str + "\x1b[0m"
+	case "yellow":
+		str = "\x1b[33m" + str + "\x1b[0m"
+	case "blue":
+		str = "\x1b[34m" + str + "\x1b[0m"
+	default:
+		os.Exit(1)
+	}
+	return str
 }
