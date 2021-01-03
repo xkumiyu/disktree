@@ -1,5 +1,10 @@
 # Disk Tree
 
+[![Github Actions][ci-status]][ci]
+
+[ci]: https://github.com/xkumiyu/disktree/actions
+[ci-status]: https://github.com/xkumiyu/disktree/workflows/Go/badge.svg
+
 Disk Tree is a CLI that displays the file size according to directory structure,
 like the `tree` command.
 
