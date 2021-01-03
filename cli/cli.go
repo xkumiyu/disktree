@@ -68,7 +68,7 @@ func parseArgs() (*disktree.DiskTree, error) {
 	if err != nil {
 		return nil, err
 	}
-	if info.IsDir() == false {
+	if !info.IsDir() {
 		return nil, errors.New("not direcotry")
 	}
 

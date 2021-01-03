@@ -10,10 +10,6 @@ install:
 test:
 	$(GOCMD) test -v -coverprofile=cover.out ./...
 
-lint:
-	$(GOCMD) vet ./...
-	golint -set_exit_status ./...
-
 clean:
 	$(GOCMD) clean
 	rm -f $(BINARY_NAME)

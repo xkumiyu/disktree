@@ -10,5 +10,8 @@ import (
 func TestDisktreeRun(t *testing.T) {
 	var buf bytes.Buffer
 	d := disktree.New(".", -1, "name", true, &buf)
-	d.Run()
+	err := d.Run()
+	if err != nil {
+		t.Error("unexpected error:", err)
+	}
 }
