@@ -1,10 +1,11 @@
 # Change Log
 
-## 0.1.1
+## 0.2.0
 
 Unreleased
 
-- Added no-color option.
+- Added min-size option.
+- Added color option.
 - Fixed to avoid coloring when the output is not terminal.
 
 ## 0.1.0

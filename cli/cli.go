@@ -27,22 +27,21 @@ func Run() int {
 }
 
 func parseArgs() (*disktree.DiskTree, error) {
-	var rootPath string
+	var (
+		rootPath    string
+		showVersion bool
+		color       string
+		maxDepth    int
+		minSize     int64
+		sortKey     string
+	)
 
-	var showVersion bool
 	flag.BoolVar(&showVersion, "version", false, "Show the version and exit.")
-
-	var noColor bool
-	flag.BoolVar(&noColor, "no-color", false, "Disable colorization.")
-
-	var maxDepth int
+	flag.StringVar(&color, "color", "auto", "Set the colorization: auto, on/yes, off/no")
 	flag.IntVar(&maxDepth, "max-depth", -1, "Show only to max-depth. -1 means infinity.")
-
-	var sortKey string
-	flag.StringVar(&sortKey, "sort", "name", "Select sort: name, size")
-
-	// TODO: min-size
-	// flag.IntVar(&minSize, "min-size", -1, "Show files/dirs larger than min-size.")
+	flag.IntVar(&maxDepth, "L", -1, "Alias of -max-depth.")
+	flag.Int64Var(&minSize, "min-size", -1, "Show only files/dirs larger than min-size (bytes).")
+	flag.StringVar(&sortKey, "sort", "name", "Select sort: name, size, files")
 
 	flag.Parse()
 
@@ -60,7 +59,7 @@ func parseArgs() (*disktree.DiskTree, error) {
 		return nil, errors.New("got unexpected extra argument")
 	}
 
-	if sortKey != "name" && sortKey != "size" {
+	if sortKey != "name" && sortKey != "size" && sortKey != "files" {
 		return nil, errors.New("invalid value for sort")
 	}
 
@@ -72,12 +71,19 @@ func parseArgs() (*disktree.DiskTree, error) {
 		return nil, errors.New("not direcotry")
 	}
 
-	isColor := !noColor
-	if !isTerminal() {
+	var isColor bool
+	switch color {
+	case "auto":
+		isColor = isTerminal()
+	case "on", "yes":
+		isColor = true
+	case "off", "no":
 		isColor = false
+	default:
+		return nil, errors.New("invalid value for color")
 	}
 
-	return disktree.New(rootPath, maxDepth, sortKey, isColor, os.Stdout), nil
+	return disktree.New(rootPath, maxDepth, minSize, sortKey, isColor, os.Stdout), nil
 }
 
 func isTerminal() bool {

@@ -10,12 +10,13 @@ import (
 )
 
 // Version of DiskTree
-const Version = "0.1.1dev"
+const Version = "0.2.0-beta"
 
 // DiskTree ...
 type DiskTree struct {
 	rootPath  string
 	maxDepth  int
+	minSize   int64
 	sortKey   string
 	isColor   bool
 	outWriter io.Writer
@@ -25,6 +26,7 @@ type DiskTree struct {
 func New(
 	rootPath string,
 	maxDepth int,
+	minSize int64,
 	sortKey string,
 	isColor bool,
 	outWriter io.Writer,
@@ -32,6 +34,7 @@ func New(
 	d := &DiskTree{
 		rootPath:  rootPath,
 		maxDepth:  maxDepth,
+		minSize:   minSize,
 		sortKey:   sortKey,
 		isColor:   isColor,
 		outWriter: outWriter,
@@ -43,6 +46,7 @@ type node struct {
 	name     string
 	size     int64
 	files    int
+	dirs     int
 	isdir    bool
 	children []node
 }
@@ -57,8 +61,15 @@ func (d *DiskTree) Run() error {
 	for _, c := range n.children {
 		n.size += c.size
 		n.files += c.files
+		n.dirs += c.dirs
 	}
 	d.print([]node{n}, "", 0)
+
+	fmt.Fprintf(
+		d.outWriter,
+		"\n%d directories, %d files, %d bytes\n",
+		n.dirs, n.files, n.size,
+	)
 
 	return nil
 }
@@ -74,10 +85,12 @@ func (d *DiskTree) walk(path string) []node {
 		}
 
 		if n.isdir {
+			n.dirs = 1
 			n.children = d.walk(filepath.Join(path, n.name))
 			for _, c := range n.children {
 				n.size += c.size
 				n.files += c.files
+				n.dirs += c.dirs
 			}
 		} else {
 			n.files = 1
@@ -87,8 +100,18 @@ func (d *DiskTree) walk(path string) []node {
 		nodes = append(nodes, n)
 	}
 
-	if d.sortKey == "size" {
-		sort.SliceStable(nodes, func(i, j int) bool { return nodes[i].size > nodes[j].size })
+	switch d.sortKey {
+	case "size":
+		sort.SliceStable(nodes, func(i, j int) bool {
+			return nodes[i].size > nodes[j].size
+		})
+	case "files":
+		sort.SliceStable(nodes, func(i, j int) bool {
+			return nodes[i].files > nodes[j].files
+		})
+	case "name":
+	default:
+		os.Exit(1)
 	}
 
 	return nodes
@@ -99,15 +122,23 @@ func (d *DiskTree) print(nodes []node, basePrefix string, depth int) {
 		return
 	}
 
-	// TODO: filter files using min-size
+	if d.minSize != 1 {
+		var filteredNodes []node
+		for _, n := range nodes {
+			if n.size > d.minSize {
+				filteredNodes = append(filteredNodes, n)
+			}
+		}
+		nodes = filteredNodes
+	}
 
-	for i, node := range nodes {
-		size := readableSize(float64(node.size))
+	for i, n := range nodes {
+		size := readableSize(float64(n.size))
 		if d.isColor {
 			size = addColor(size, "green")
 		}
-		name := node.name
-		if node.isdir {
+		name := n.name
+		if n.isdir {
 			if d.isColor {
 				name = addColor(name, "blue")
 			}
@@ -125,8 +156,8 @@ func (d *DiskTree) print(nodes []node, basePrefix string, depth int) {
 		}
 
 		suffix := ""
-		if node.isdir && node.files > 0 {
-			num := fmt.Sprintf("[%d files]", node.files)
+		if n.isdir && n.files > 0 {
+			num := fmt.Sprintf("[%d files]", n.files)
 			if d.isColor {
 				num = addColor(num, "yellow")
 			}
@@ -143,21 +174,21 @@ func (d *DiskTree) print(nodes []node, basePrefix string, depth int) {
 				nextPrefix += "|   "
 			}
 		}
-		d.print(node.children, nextPrefix, depth+1)
+		d.print(n.children, nextPrefix, depth+1)
 	}
 }
 
 func readableSize(size float64) string {
 	i := 0
 	for size > 1000 && i < 5 {
-		size /= 1024
+		size /= 1000
 		i++
 	}
 	var unit = [5]string{"B", "K", "M", "G", "T"}
-	if size < 10 {
-		return fmt.Sprintf("%1.1f%s", size, unit[i])
+	if size == 0 || size >= 10 {
+		return fmt.Sprintf("%3.0f%s", size, unit[i])
 	}
-	return fmt.Sprintf("%3.0f%s", size, unit[i])
+	return fmt.Sprintf("%1.1f%s", size, unit[i])
 }
 
 func addColor(str string, color string) string {

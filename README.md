@@ -18,7 +18,7 @@ Install using homebrew:
 brew install xkumiyu/tap/disktree
 ```
 
-Alternatively, you can use `go get` to install:
+If you want to use HEAD, you can do the following:
 
 ```sh
 go get github.com/xkumiyu/disktree/cmd/dtree
@@ -35,5 +35,15 @@ dtree /path/to/dir
 ### Options
 
 - `-max-depth <int>`: show only to max-depth
-- `-sort <string>`: select sort: name(default), size
-- `-no-color`: disable colorization
+- `-min-size <int>`: show only files/dirs larger than min-size (bytes)
+- `-sort <string>`: select sort: name(default), size, files
+- `-color <string>`: set the colorization: auto(default), on, off
+
+## Comparison
+
+The processing time when running in a large directory (>1M files) is as follows:
+
+| command | time |
+| :-- | :-- |
+| tree -a | 104s |
+| dtree | 95s |
