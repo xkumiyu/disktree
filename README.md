@@ -45,5 +45,5 @@ The processing time when running in a large directory (>1M files) is as follows:
 
 | command | time |
 | :-- | :-- |
-| tree -a | 104s |
 | dtree | 95s |
+| tree -a | 104s |

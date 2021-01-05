@@ -27,6 +27,6 @@ func TestDisktreeRun(t *testing.T) {
 	expected := fmt.Sprintf("  0B %s/\n\n0 directories, 0 files, 0 bytes\n", tmp)
 	actual := buf.String()
 	if expected != actual {
-		t.Errorf("message wont %s but got %s", expected, actual)
+		t.Errorf("output wont %s but got %s", expected, actual)
 	}
 }
