@@ -9,7 +9,7 @@ import (
 )
 
 // Version of DiskTree
-const Version = "0.2.0-beta"
+const Version = "0.2.0"
 
 // DiskTree ...
 type DiskTree struct {

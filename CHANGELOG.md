@@ -2,7 +2,7 @@
 
 ## 0.2.0
 
-Unreleased
+Released 2021-01-06
 
 - Added min-size option.
 - Added color option.
