@@ -3,13 +3,11 @@ package disktree
 import (
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
-	"path/filepath"
 )
 
 // Version of DiskTree
-const Version = "0.2.0"
+const Version = "0.2.1-beta"
 
 // DiskTree ...
 type DiskTree struct {
@@ -43,99 +41,72 @@ func New(
 
 // Run ...
 func (d *DiskTree) Run() error {
-	n := Node{
-		name:     d.rootPath,
-		children: d.walk(d.rootPath),
-		isdir:    true,
-	}
-	n.totalize()
-	d.print([]Node{n}, "", 0)
+	t := Tree{Name: d.rootPath, IsDir: true}
+	t.Walk(d.rootPath)
+	d.print(&t, "", false)
 
 	fmt.Fprintf(
 		d.outWriter,
 		"\n%d directories, %d files, %d bytes\n",
-		n.dirs, n.files, n.size,
+		t.Dirs, t.Files, t.Size,
 	)
 
 	return nil
 }
 
-func (d *DiskTree) walk(path string) Nodes {
-	var ns Nodes
-
-	files, _ := ioutil.ReadDir(path)
-	for _, file := range files {
-		n := Node{
-			name:  file.Name(),
-			isdir: file.IsDir(),
-		}
-		if n.isdir {
-			n.dirs = 1
-			n.children = d.walk(filepath.Join(path, n.name))
-			n.totalize()
-		} else {
-			n.files = 1
-			n.size = file.Size()
-		}
-		ns = append(ns, n)
-	}
-	return ns
-}
-
-func (d *DiskTree) print(ns Nodes, basePrefix string, depth int) {
-	if d.maxDepth != -1 && depth > d.maxDepth {
+func (d *DiskTree) print(t *Tree, basePrefix string, isLeaf bool) {
+	if d.maxDepth != -1 && t.Depth > d.maxDepth {
 		return
 	}
 	if d.minSize != 1 {
-		ns = ns.SizeFilter(d.minSize)
+		t.SizeFilter(d.minSize)
 	}
-	if d.sortKey != "name" {
-		ns.Sort(d.sortKey)
-	}
+	t.Sort(d.sortKey)
 
-	for i, n := range ns {
-		size := n.readableSize()
+	size := t.ReadableSize()
+	if d.isColor {
+		size = addColor(size, "green")
+	}
+	name := t.Name
+	if t.IsDir {
 		if d.isColor {
-			size = addColor(size, "green")
+			name = addColor(name, "blue")
 		}
-		name := n.name
-		if n.isdir {
-			if d.isColor {
-				name = addColor(name, "blue")
-			}
-			name += "/"
-		}
-		body := fmt.Sprintf("%s %s", size, name)
+		name += "/"
+	}
+	body := fmt.Sprintf("%s %s", size, name)
 
-		prefix := basePrefix
-		if depth > 0 {
-			if i == len(ns)-1 {
-				prefix += "`-- "
-			} else {
-				prefix += "|-- "
-			}
+	prefix := basePrefix
+	nextPrefix := basePrefix
+	if t.Depth > 0 {
+		if isLeaf {
+			prefix += "`-- "
+			nextPrefix += "    "
+		} else {
+			prefix += "|-- "
+			nextPrefix += "|   "
 		}
+	}
 
-		suffix := ""
-		if n.isdir && n.files > 0 {
-			num := fmt.Sprintf("[%d files]", n.files)
-			if d.isColor {
-				num = addColor(num, "yellow")
-			}
-			suffix = " " + num
+	suffix := ""
+	if t.IsDir && t.Files > 0 {
+		num := fmt.Sprintf("[%d files]", t.Files)
+		if d.isColor {
+			num = addColor(num, "yellow")
 		}
+		suffix = " " + num
+	}
 
-		fmt.Fprintln(d.outWriter, prefix+body+suffix)
+	fmt.Fprintln(d.outWriter, prefix+body+suffix)
 
-		nextPrefix := basePrefix
-		if depth > 0 {
-			if i == len(ns)-1 {
-				nextPrefix += "    "
-			} else {
-				nextPrefix += "|   "
-			}
+	for i, st := range t.Children {
+		var nextIsLeaf bool
+		if i == len(t.Children)-1 {
+			nextIsLeaf = true
+		} else {
+			nextIsLeaf = false
 		}
-		d.print(n.children, nextPrefix, depth+1)
+		d.print(&st, nextPrefix, nextIsLeaf)
 	}
 }
 

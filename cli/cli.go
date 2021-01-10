@@ -5,6 +5,9 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"regexp"
+	"runtime"
+	"strconv"
 
 	"github.com/xkumiyu/disktree"
 )
@@ -32,16 +35,18 @@ func parseArgs() (*disktree.DiskTree, error) {
 		showVersion bool
 		color       string
 		maxDepth    int
-		minSize     int64
+		minSize     string
 		sortKey     string
+		procs       int
 	)
 
 	flag.BoolVar(&showVersion, "version", false, "Show the version and exit.")
 	flag.StringVar(&color, "color", "auto", "Set the colorization: auto, on/yes, off/no")
 	flag.IntVar(&maxDepth, "max-depth", -1, "Show only to max-depth. -1 means infinity.")
 	flag.IntVar(&maxDepth, "L", -1, "Alias of -max-depth.")
-	flag.Int64Var(&minSize, "min-size", -1, "Show only files/dirs larger than min-size (bytes).")
+	flag.StringVar(&minSize, "min-size", "-1", "Show only files/dirs larger than min-size.")
 	flag.StringVar(&sortKey, "sort", "name", "Select sort: name, size, files")
+	flag.IntVar(&procs, "procs", -1, "The number of max processes. -1 means the number of logical CPUs.")
 
 	flag.Parse()
 
@@ -83,7 +88,16 @@ func parseArgs() (*disktree.DiskTree, error) {
 		return nil, errors.New("invalid value for color")
 	}
 
-	return disktree.New(rootPath, maxDepth, minSize, sortKey, isColor, os.Stdout), nil
+	if procs != 1 {
+		runtime.GOMAXPROCS(procs)
+	}
+
+	intMinSize, err := parseMinSize(minSize)
+	if err != nil {
+		return nil, err
+	}
+
+	return disktree.New(rootPath, maxDepth, intMinSize, sortKey, isColor, os.Stdout), nil
 }
 
 func isTerminal() bool {
@@ -91,4 +105,25 @@ func isTerminal() bool {
 		return true
 	}
 	return false
+}
+
+func parseMinSize(minSize string) (int64, error) {
+	var intMinSize int64
+	r := regexp.MustCompile(`^(-?\d+)(B|K|M|G|T)?$`)
+	m := r.FindAllStringSubmatch(minSize, -1)
+	if len(m) != 1 {
+		return -1, errors.New("invalid value for min-size")
+	}
+	intMinSize, _ = strconv.ParseInt(m[0][1], 10, 64)
+	switch m[0][2] {
+	case "K":
+		intMinSize *= 1000
+	case "M":
+		intMinSize *= 1000 * 1000
+	case "G":
+		intMinSize *= 1000 * 1000 * 1000
+	case "T":
+		intMinSize *= 1000 * 1000 * 1000 * 1000
+	}
+	return intMinSize, nil
 }

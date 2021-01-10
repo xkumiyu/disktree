@@ -1,10 +1,12 @@
-package disktree
+package disktree_test
 
 import (
 	"testing"
+
+	"github.com/xkumiyu/disktree"
 )
 
-func TestNodeReadableSize(t *testing.T) {
+func TestTreeReadableSize(t *testing.T) {
 	cases := map[string]struct {
 		size     int64
 		expected string
@@ -19,8 +21,8 @@ func TestNodeReadableSize(t *testing.T) {
 	for n, tt := range cases {
 		tt := tt
 		t.Run(n, func(t *testing.T) {
-			n := Node{size: tt.size}
-			if actual := n.readableSize(); tt.expected != actual {
+			tree := disktree.Tree{Size: tt.size}
+			if actual := tree.ReadableSize(); tt.expected != actual {
 				t.Errorf("readable size wont %s but got %s", tt.expected, actual)
 			}
 		})

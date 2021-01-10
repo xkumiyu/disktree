@@ -1,5 +1,11 @@
 # Change Log
 
+## 0.2.1
+
+Unreleased
+
+- Added procs option.
+
 ## 0.2.0
 
 Released 2021-01-06
