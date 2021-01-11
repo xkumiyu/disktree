@@ -29,20 +29,20 @@ go get github.com/xkumiyu/disktree/cmd/dtree
 You can use `dtree` command.
 
 ```sh
-dtree /path/to/dir
+dtree [OPTIONS] PATH
 ```
 
 ### Options
 
-- `-max-depth <int>`: show only to max-depth
-- `-min-size <string>`: show only files/dirs larger than min-size
-- `-sort <string>`: select sort: name(default), size, files
-- `-color <string>`: set the colorization: auto(default), on, off
+- `-L, --max-depth INT`: show only to max-depth
+- `-s, --sort STRING`: select sort: name(default), size, and files
+- `--min-size STRING`: show only files/dirs larger than min-size
+- `--color STRING`: set the colorization: auto(default), always, and never
 
 ### Example
 
 ```sh
-dtree -max-depth 2 -min-size 1M -sort size ~/
+dtree -L 2 -s size　-min-size 1M  ~/
 ```
 
 ## Comparison

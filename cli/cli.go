@@ -41,11 +41,18 @@ func parseArgs() (*disktree.DiskTree, error) {
 	)
 
 	flag.BoolVar(&showVersion, "version", false, "Show the version and exit.")
-	flag.StringVar(&color, "color", "auto", "Set the colorization: auto, on/yes, off/no")
+	flag.BoolVar(&showVersion, "V", false, "Alias of version.")
+
 	flag.IntVar(&maxDepth, "max-depth", -1, "Show only to max-depth. -1 means infinity.")
-	flag.IntVar(&maxDepth, "L", -1, "Alias of -max-depth.")
+	flag.IntVar(&maxDepth, "L", -1, "Alias of max-depth.")
+
+	flag.StringVar(&sortKey, "sort", "name", "Select sort: name, size, and files")
+	flag.StringVar(&sortKey, "s", "name", "Alias of sort.")
+
 	flag.StringVar(&minSize, "min-size", "-1", "Show only files/dirs larger than min-size.")
-	flag.StringVar(&sortKey, "sort", "name", "Select sort: name, size, files")
+
+	flag.StringVar(&color, "color", "auto", "Use terminal colors: auto, always, and never")
+
 	flag.IntVar(&procs, "procs", -1, "The number of max processes. -1 means the number of logical CPUs.")
 
 	flag.Parse()
@@ -55,41 +62,13 @@ func parseArgs() (*disktree.DiskTree, error) {
 		return nil, flag.ErrHelp
 	}
 
-	switch len(flag.Args()) {
-	case 0:
-		rootPath = "."
-	case 1:
-		rootPath = flag.Arg(0)
-	default:
-		return nil, errors.New("got unexpected extra argument")
+	rootPath, err := parseRootPath()
+	if err != nil {
+		return nil, err
 	}
 
 	if sortKey != "name" && sortKey != "size" && sortKey != "files" {
 		return nil, errors.New("invalid value for sort")
-	}
-
-	info, err := os.Stat(rootPath)
-	if err != nil {
-		return nil, err
-	}
-	if !info.IsDir() {
-		return nil, errors.New("not direcotry")
-	}
-
-	var isColor bool
-	switch color {
-	case "auto":
-		isColor = isTerminal()
-	case "on", "yes":
-		isColor = true
-	case "off", "no":
-		isColor = false
-	default:
-		return nil, errors.New("invalid value for color")
-	}
-
-	if procs != 1 {
-		runtime.GOMAXPROCS(procs)
 	}
 
 	intMinSize, err := parseMinSize(minSize)
@@ -97,14 +76,53 @@ func parseArgs() (*disktree.DiskTree, error) {
 		return nil, err
 	}
 
+	isColor, err := parseColor(color)
+	if err != nil {
+		return nil, err
+	}
+
+	if procs != 1 {
+		runtime.GOMAXPROCS(procs)
+	}
+
 	return disktree.New(rootPath, maxDepth, intMinSize, sortKey, isColor, os.Stdout), nil
 }
 
-func isTerminal() bool {
-	if info, _ := os.Stdout.Stat(); (info.Mode() & os.ModeCharDevice) != 0 {
-		return true
+func parseRootPath() (string, error) {
+	var rootPath string
+	switch len(flag.Args()) {
+	case 0:
+		rootPath = "."
+	case 1:
+		rootPath = flag.Arg(0)
+	default:
+		return "", errors.New("got unexpected extra argument")
 	}
-	return false
+
+	info, err := os.Stat(rootPath)
+	if err != nil {
+		return "", err
+	}
+	if !info.IsDir() {
+		return "", errors.New("not direcotry")
+	}
+
+	return rootPath, nil
+}
+
+func parseColor(color string) (bool, error) {
+	var isColor bool
+	switch color {
+	case "auto", "automatic":
+		isColor = isTerminal()
+	case "always", "on", "yes":
+		isColor = true
+	case "never", "off", "no":
+		isColor = false
+	default:
+		return false, errors.New("invalid value for color")
+	}
+	return isColor, nil
 }
 
 func parseMinSize(minSize string) (int64, error) {
@@ -126,4 +144,11 @@ func parseMinSize(minSize string) (int64, error) {
 		intMinSize *= 1000 * 1000 * 1000 * 1000
 	}
 	return intMinSize, nil
+}
+
+func isTerminal() bool {
+	if info, _ := os.Stdout.Stat(); (info.Mode() & os.ModeCharDevice) != 0 {
+		return true
+	}
+	return false
 }

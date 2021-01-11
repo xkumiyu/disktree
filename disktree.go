@@ -61,6 +61,11 @@ func (d *DiskTree) print(t *Tree, basePrefix string, isLeaf bool) {
 	if d.minSize != 1 {
 		t.SizeFilter(d.minSize)
 	}
+	// TODO: only with all option
+	ignoreDot := false
+	if ignoreDot {
+		t.ignoreFilter()
+	}
 	t.Sort(d.sortKey)
 
 	size := t.ReadableSize()

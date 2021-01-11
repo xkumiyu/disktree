@@ -84,3 +84,13 @@ func (t *Tree) SizeFilter(minSize int64) {
 	}
 	t.Children = newChildren
 }
+
+func (t *Tree) ignoreFilter() {
+	var newChildren []Tree
+	for _, st := range t.Children {
+		if st.Name[:1] != "." {
+			newChildren = append(newChildren, st)
+		}
+	}
+	t.Children = newChildren
+}
