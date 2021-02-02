@@ -1,10 +1,11 @@
 # Change Log
 
-## 0.2.1
+## 0.3.0
 
-Unreleased
+Released 2021-02-02
 
 - Added procs option.
+- Added spinner.
 
 ## 0.2.0
 

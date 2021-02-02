@@ -42,7 +42,7 @@ dtree [OPTIONS] PATH
 ### Example
 
 ```sh
-dtree -L 2 -s size　-min-size 1M  ~/
+dtree -L 2 -s size -min-size 1M ~/
 ```
 
 ## Comparison
@@ -52,4 +52,4 @@ The processing time when running in a large directory (>1M files) is as follows:
 | command | time |
 | :-- | :-- |
 | dtree | 45.6s +/- 4.8s |
-| tree -a -s | 117.2s +/- 3.8s  |
+| tree -a -s | 117.2s +/- 3.8s |
