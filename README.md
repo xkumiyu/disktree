@@ -5,7 +5,7 @@
 [ci]: https://github.com/xkumiyu/disktree/actions
 [ci-status]: https://github.com/xkumiyu/disktree/workflows/test/badge.svg
 
-Disk Tree is a CLI that displays the file size according to directory structure,
+Disk Tree is a CLI that displays the file size according to the directory structure,
 like the `tree` command.
 
 ![screenshot](https://user-images.githubusercontent.com/6437204/103475169-20a26180-4dee-11eb-94eb-fdfd1310dd98.png)
@@ -18,7 +18,7 @@ Install using homebrew:
 brew install xkumiyu/tap/disktree
 ```
 
-If you want to use HEAD, you can do the following:
+If you want to use the HEAD, you can do the following:
 
 ```sh
 go get github.com/xkumiyu/disktree/cmd/dtree

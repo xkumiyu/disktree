@@ -1,9 +1,11 @@
 package disktree
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
+	"time"
 )
 
 // Version of DiskTree
@@ -39,12 +41,26 @@ func New(
 	return d
 }
 
+const clearLine = "\r\033[K"
+
 // Run ...
 func (d *DiskTree) Run() error {
+	ctx := context.Background()
+	ctx, cancel := context.WithCancel(ctx)
+
+	go func() {
+		time.Sleep(1 * time.Second)
+		spin(ctx)
+	}()
+
 	t := Tree{Name: d.rootPath, IsDir: true}
 	t.Walk(d.rootPath)
-	d.print(&t, "", false)
 
+	// fmt.Print("\033[?25h")
+	fmt.Print(clearLine)
+	cancel()
+
+	d.print(&t, "", false)
 	fmt.Fprintf(
 		d.outWriter,
 		"\n%d directories, %d files, %d bytes\n",
@@ -127,4 +143,23 @@ func addColor(str string, color string) string {
 		os.Exit(1)
 	}
 	return str
+}
+
+func spin(ctx context.Context) {
+	frames := []rune(`⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏`)
+	delay := 100 * time.Millisecond
+
+	// fmt.Print("\033[?25l")
+	for {
+		for i := 0; i < len(frames); i++ {
+			select {
+			case <-ctx.Done():
+				return
+			default:
+				fmt.Printf("\r%s Exploring...", string(frames[i]))
+				time.Sleep(delay)
+			}
+
+		}
+	}
 }
